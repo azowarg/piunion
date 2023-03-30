@@ -52,7 +52,8 @@ def upload_basic(file_name: str, mimetype: str):
         # create drive api client
         service = build('drive', 'v3', credentials=creds)
 
-        file_metadata = {'name': file_name}
+        file_metadata = {'name': file_name,
+                         'mimeType': 'application/vnd.google-apps.spreadsheet'}
         media = MediaFileUpload(file_name,
                                 mimetype=mimetype)
         # pylint: disable=maybe-no-member
@@ -159,13 +160,14 @@ def upload_revision(real_file_id, file_name, mimetype):
     try:
         # create drive api client
         service = build('drive', 'v3', credentials=creds)
+        file_metadata = {'mimeType': 'application/vnd.google-apps.spreadsheet'}
         file_id = real_file_id
         media = MediaFileUpload(file_name,
                                 mimetype=mimetype,
                                 resumable=True)
         # pylint: disable=maybe-no-member
         file = service.files().update(fileId=file_id,
-                                      body={},
+                                      body=file_metadata,
                                       media_body=media,
                                       fields='id').execute()
         print(F'File ID: {file.get("id")}')

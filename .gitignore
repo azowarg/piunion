@@ -2,5 +2,5 @@
 Python/token.json
 Python/credentials.json
 Python/__pycache__
-Python/archive
+Python/archive/*
 Python/token_price_new.xlsx

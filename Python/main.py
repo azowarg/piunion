@@ -1,15 +1,18 @@
+import logging
+import os
 from datetime import datetime
+from shutil import copy
 
 import pandas as pd
 import xlsxwriter as xw
-from shutil import copy
+
 import google_drive
 import rates
 
 
 if __name__ == '__main__':
-
-    google_user = ''
+    # os.chdir('')
+    google_user = 'n.larionova@gmail.com'
     rate_file = 'token_price_new.xlsx'
     mime_type = \
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -29,10 +32,12 @@ if __name__ == '__main__':
         'USD/EUR': rates.cb_get_rates('USD') / rates.cb_get_rates('EUR')
     }
 
-    '''
+    rate_from_dict = pd.DataFrame(today_rate, index=[0])
+
+    """
     Check existing of file.
     Create if not exist or move a previous copy to archive.
-    '''
+    """
     try:
         open(rate_file, 'x').close()
     except FileExistsError:
@@ -40,24 +45,31 @@ if __name__ == '__main__':
         copy(rate_file, 'archive/' + datetime.now().strftime('%d.%m.%y %H:%M_')
              + rate_file)
     else:
-        xw.Workbook(rate_file).close()
+        workbook = xw.Workbook(rate_file)
+        worksheet = workbook.add_worksheet('currency_rates')
+        workbook.close()
+        # writer = pd.ExcelWriter(rate_file) 
+        # for column in rate_from_dict:
+        #     column_width = max(rate_from_dict[column].astype(str).map(len).max(), len(column))
+        #     col_idx = rate_from_dict.columns.get_loc(column)
+        #     writer.sheets['currency_rates'].set_column(col_idx, col_idx, column_width)
+        # writer.
 
-    '''
+    """
     Create dataframe from file and dictionary.
     Concatenate them and save with previous name.
-    '''
-    new_rate_file = pd.read_excel(rate_file)
-    rate_from_dict = pd.DataFrame(today_rate, index=[0])
+    """
+    new_rate_file = pd.read_excel(rate_file, sheet_name='currency_rates')
     new_rate_file = pd.concat([new_rate_file, rate_from_dict],
                               ignore_index=True)
-    new_rate_file.to_excel(rate_file, index=False)
-    '''
+    new_rate_file.to_excel(rate_file, index=False, sheet_name='currency_rates')
+    """
     Upload file to Google Drive.
-    Check authentification, chech for file existense in
+    Check authentification, check for file existense in
     cloud and add permitions for user if need.
-    '''
+    """
     google_drive.create_auth_token()
-    check_file_id = google_drive.search_file(rate_file)
+    check_file_id = google_drive.search_file(rate_file.rstrip('.xlsx'))
     if not check_file_id:
         new_id = google_drive.upload_basic(rate_file, mime_type)
         google_drive.share_file(new_id, google_user)
